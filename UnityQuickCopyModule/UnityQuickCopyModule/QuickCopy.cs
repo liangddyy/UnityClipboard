@@ -120,6 +120,12 @@ namespace UnityQuickCopyModule
             ClipItem item = new ClipItem(ContentType.Package);
             item.Values.Add(outPath);
             CopyClipboardItem(item);
+            Debug.Log("已导出选中资源!可直接粘贴至任意Assets目录!");
+        }
+        [MenuItem("Assets/复制 - 导出包复制", true, 21)]
+        private static bool CopyAsPackageValidate()
+        {
+            return Selection.assetGUIDs.Length > 0;
         }
 
         #endregion
@@ -274,7 +280,7 @@ namespace UnityQuickCopyModule
     {
         #region reflection stuff
 
-#if !UNITY_5_3_PLUS
+#if !UNITY_5_3_OR_NEWER
         private delegate AssetsItem[] ImportPackageStep1Delegate(string packagePath, out string packageIconPath);
 
         private static Type assetServerType;
@@ -440,7 +446,7 @@ namespace UnityQuickCopyModule
         public static object[] ExtractAssetsFromPackage(string path, out string packageIconPath,
             out bool allowReInstall)
         {
-#if !UNITY_5_3_PLUS
+#if !UNITY_5_3_OR_NEWER
             AssetsItem[] array = ImportPackageStep1(path, out packageIconPath);
             allowReInstall = false;
             return array;
@@ -453,7 +459,7 @@ namespace UnityQuickCopyModule
 
         private static void ChangeAssetItemPath(object assetItem, string selectedFolderPath)
         {
-#if !UNITY_5_3_PLUS
+#if !UNITY_5_3_OR_NEWER
             AssetsItem item = (AssetsItem) assetItem;
             item.exportedAssetPath = selectedFolderPath + item.exportedAssetPath.Remove(0, 6);
             item.pathName = selectedFolderPath + item.pathName.Remove(0, 6);
@@ -469,7 +475,7 @@ namespace UnityQuickCopyModule
         public static void ShowImportPackageWindow(string path, object[] array, string packageIconPath,
             bool allowReInstall)
         {
-#if !UNITY_5_3_PLUS
+#if !UNITY_5_3_OR_NEWER
             ShowImportPackageMethodInfo.Invoke(null, new object[] {path, array, packageIconPath});
 #else
             ShowImportPackageMethodInfo.Invoke(null, new object[] {path, array, packageIconPath, allowReInstall});
@@ -478,7 +484,7 @@ namespace UnityQuickCopyModule
 
         public static void ImportPackageSilently(object[] assetsItems)
         {
-#if !UNITY_5_3_PLUS
+#if !UNITY_5_3_OR_NEWER
             ImportPackageStep2MethodInfo.Invoke(null, new object[] {assetsItems, false});
 #else
             ImportPackageAssetsMethodInfo.Invoke(null, new object[] {assetsItems, false});
