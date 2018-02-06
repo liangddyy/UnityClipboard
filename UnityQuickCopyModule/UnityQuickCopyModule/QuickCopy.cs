@@ -122,6 +122,7 @@ namespace UnityQuickCopyModule
             CopyClipboardItem(item);
             Debug.Log("已导出选中资源!可直接粘贴至任意Assets目录!");
         }
+
         [MenuItem("Assets/复制 - 导出包复制", true, 21)]
         private static bool CopyAsPackageValidate()
         {
@@ -280,7 +281,6 @@ namespace UnityQuickCopyModule
     {
         #region reflection stuff
 
-#if !UNITY_5_3_OR_NEWER
         private delegate AssetsItem[] ImportPackageStep1Delegate(string packagePath, out string packageIconPath);
 
         private static Type assetServerType;
@@ -317,6 +317,7 @@ namespace UnityQuickCopyModule
         }
 
         private static MethodInfo importPackageStep2MethodInfo;
+
         private static MethodInfo ImportPackageStep2MethodInfo
         {
             get
@@ -329,7 +330,7 @@ namespace UnityQuickCopyModule
                 return importPackageStep2MethodInfo;
             }
         }
-#else
+
         private delegate object[] ExtractAndPrepareAssetListDelegate(string packagePath, out string packageIconPath,
             out bool allowReInstall);
 
@@ -342,7 +343,7 @@ namespace UnityQuickCopyModule
                 if (packageUtilityType == null)
                 {
                     packageUtilityType
-= typeof(MenuItem).Assembly.GetType("UnityEditor.PackageUtility");
+                        = typeof(MenuItem).Assembly.GetType("UnityEditor.PackageUtility");
                 }
                 return packageUtilityType;
             }
@@ -357,10 +358,10 @@ namespace UnityQuickCopyModule
                 if (extractAndPrepareAssetList == null)
                 {
                     extractAndPrepareAssetList
-= (ExtractAndPrepareAssetListDelegate) Delegate.CreateDelegate(
-                        typeof(ExtractAndPrepareAssetListDelegate),
-                        null,
-                        PackageUtilityType.GetMethod("ExtractAndPrepareAssetList"));
+                        = (ExtractAndPrepareAssetListDelegate) Delegate.CreateDelegate(
+                            typeof(ExtractAndPrepareAssetListDelegate),
+                            null,
+                            PackageUtilityType.GetMethod("ExtractAndPrepareAssetList"));
                 }
 
                 return extractAndPrepareAssetList;
@@ -376,15 +377,16 @@ namespace UnityQuickCopyModule
                 if (destinationAssetPathFieldInfo == null)
                 {
                     Type importPackageItem
-= typeof(MenuItem).Assembly.GetType("UnityEditor.ImportPackageItem");
+                        = typeof(MenuItem).Assembly.GetType("UnityEditor.ImportPackageItem");
                     destinationAssetPathFieldInfo
-= importPackageItem.GetField("destinationAssetPath");
+                        = importPackageItem.GetField("destinationAssetPath");
                 }
                 return destinationAssetPathFieldInfo;
             }
         }
 
         private static MethodInfo importPackageAssetsMethodInfo;
+
         private static MethodInfo ImportPackageAssetsMethodInfo
         {
             get
@@ -393,13 +395,13 @@ namespace UnityQuickCopyModule
                 {
                     // ImportPackageAssetsImmediately 是同步的导入5.4以上版本可用
                     importPackageAssetsMethodInfo
-= PackageUtilityType.GetMethod("ImportPackageAssetsImmediately") ?? PackageUtilityType.GetMethod("ImportPackageAssets");
+                        = PackageUtilityType.GetMethod("ImportPackageAssetsImmediately") ??
+                          PackageUtilityType.GetMethod("ImportPackageAssets");
                 }
 
                 return importPackageAssetsMethodInfo;
             }
         }
-#endif
 
         private static MethodInfo showImportPackageMethodInfo;
 
@@ -423,11 +425,14 @@ namespace UnityQuickCopyModule
         {
             string packageIconPath;
             bool allowReInstall;
+            // 临时的解决办法. 有时间再改。
+            if (AssetServerType.GetMethod("ImportPackageStep1") != null)
+                IsOlder53VersionAPI = true;
+            else
+                IsOlder53VersionAPI = false;
 
             object[] assetsItems = ExtractAssetsFromPackage(packagePath, out packageIconPath, out allowReInstall);
-
             if (assetsItems == null) return;
-
             foreach (object item in assetsItems)
             {
                 ChangeAssetItemPath(item, selectedFolderPath);
@@ -443,59 +448,71 @@ namespace UnityQuickCopyModule
             }
         }
 
+        private static bool IsOlder53VersionAPI = false;
+
         public static object[] ExtractAssetsFromPackage(string path, out string packageIconPath,
             out bool allowReInstall)
         {
-#if !UNITY_5_3_OR_NEWER
-            AssetsItem[] array = ImportPackageStep1(path, out packageIconPath);
-            allowReInstall = false;
-            return array;
-#else
-            object[] array
-= ExtractAndPrepareAssetList(path, out packageIconPath, out allowReInstall);
-            return array;
-#endif
+            if (IsOlder53VersionAPI)
+            {
+                AssetsItem[] array = ImportPackageStep1(path, out packageIconPath);
+                allowReInstall = false;
+                return array;
+            }
+            else
+            {
+                object[] array = ExtractAndPrepareAssetList(path, out packageIconPath, out allowReInstall);
+                return array;
+            }
         }
 
         private static void ChangeAssetItemPath(object assetItem, string selectedFolderPath)
         {
-#if !UNITY_5_3_OR_NEWER
-            AssetsItem item = (AssetsItem) assetItem;
-            item.exportedAssetPath = selectedFolderPath + item.exportedAssetPath.Remove(0, 6);
-            item.pathName = selectedFolderPath + item.pathName.Remove(0, 6);
-#else
-            string destinationPath
-= (string) DestinationAssetPathFieldInfo.GetValue(assetItem);
-            destinationPath
-= selectedFolderPath + destinationPath.Remove(0, 6);
-            DestinationAssetPathFieldInfo.SetValue(assetItem, destinationPath);
-#endif
+            if (IsOlder53VersionAPI)
+            {
+                AssetsItem item = (AssetsItem) assetItem;
+                item.exportedAssetPath = selectedFolderPath + item.exportedAssetPath.Remove(0, 6);
+                item.pathName = selectedFolderPath + item.pathName.Remove(0, 6);
+            }
+            else
+            {
+                string destinationPath
+                    = (string) DestinationAssetPathFieldInfo.GetValue(assetItem);
+                destinationPath
+                    = selectedFolderPath + destinationPath.Remove(0, 6);
+                DestinationAssetPathFieldInfo.SetValue(assetItem, destinationPath);
+            }
         }
 
         public static void ShowImportPackageWindow(string path, object[] array, string packageIconPath,
             bool allowReInstall)
         {
-#if !UNITY_5_3_OR_NEWER
-            ShowImportPackageMethodInfo.Invoke(null, new object[] {path, array, packageIconPath});
-#else
-            ShowImportPackageMethodInfo.Invoke(null, new object[] {path, array, packageIconPath, allowReInstall});
-#endif
+            if (IsOlder53VersionAPI)
+            {
+                ShowImportPackageMethodInfo.Invoke(null, new object[] {path, array, packageIconPath});
+            }
+            else
+            {
+                ShowImportPackageMethodInfo.Invoke(null, new object[] {path, array, packageIconPath, allowReInstall});
+            }
         }
 
         public static void ImportPackageSilently(object[] assetsItems)
         {
-#if !UNITY_5_3_OR_NEWER
-            ImportPackageStep2MethodInfo.Invoke(null, new object[] {assetsItems, false});
-#else
-            ImportPackageAssetsMethodInfo.Invoke(null, new object[] {assetsItems, false});
-#endif
+            if (IsOlder53VersionAPI)
+            {
+                ImportPackageStep2MethodInfo.Invoke(null, new object[] {assetsItems, false});
+            }
+            else
+            {
+                ImportPackageAssetsMethodInfo.Invoke(null, new object[] {assetsItems, false});
+            }
         }
 
         private static string GetSelectedFolderPath()
         {
             UnityEngine.Object obj = Selection.activeObject;
             if (obj == null) return null;
-
             string path = AssetDatabase.GetAssetPath(obj.GetInstanceID());
             return !Directory.Exists(path) ? null : path;
         }
