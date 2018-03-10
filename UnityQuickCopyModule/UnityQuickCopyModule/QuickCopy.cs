@@ -61,7 +61,7 @@ namespace UnityQuickCopyModule
             return true;
         }
 
-        [MenuItem("Assets/复制 - 编辑器复制", false, 21)]
+        [MenuItem("Assets/复制 - 到编辑器", false, 21)]
         private static void CopyToEditor()
         {
             ClipItem item = new ClipItem(ContentType.File);
@@ -74,14 +74,14 @@ namespace UnityQuickCopyModule
             Debug.Log("已复制" + Selection.assetGUIDs.Length + "条数据，可在其他 Unity 编辑器里粘贴！");
         }
 
-        [MenuItem("Assets/复制 - 编辑器复制", true, 21)]
+        [MenuItem("Assets/复制 - 到编辑器", true, 21)]
         private static bool CopyToEditorValidate()
         {
             return Selection.assetGUIDs.Length > 0;
         }
 
 
-        [MenuItem("Assets/复制 - 剪切板复制", false, 21)]
+        [MenuItem("Assets/复制 - 到剪贴板", false, 21)]
         private static void CopyToClipboard()
         {
             StringBuilder stringBuilder = new StringBuilder("Set-Clipboard -Path ");
@@ -99,13 +99,13 @@ namespace UnityQuickCopyModule
                 Debug.LogError("复制出错!");
         }
 
-        [MenuItem("Assets/复制 - 剪切板复制", true, 21)]
+        [MenuItem("Assets/复制 - 到剪贴板", true, 21)]
         private static bool CopyToClipboardValidate()
         {
             return Selection.assetGUIDs.Length > 0;
         }
 
-        [MenuItem("Assets/复制 - 导出包复制", false, 21)]
+        [MenuItem("Assets/复制 - 到编辑器(导出包)", false, 21)]
         private static void CopyAsPackage()
         {
             string[] assetPaths = new string[Selection.assetGUIDs.Length];
